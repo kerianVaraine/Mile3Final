@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "916167221746",
+    "firebase_url": "https://positioninteractive.firebaseio.com",
+    "project_id": "positioninteractive",
+    "storage_bucket": "positioninteractive.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:916167221746:android:446f59327ee6b7b0308b6b",
+        "android_client_info": {
+          "package_name": "com.kerian.mile3"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "916167221746-8156nfgi106f0mqri3av7op3825tqq4s.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB0zvH0VMhCJ3aBkeFjrY6RUKQwOEU_WAg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "916167221746-8156nfgi106f0mqri3av7op3825tqq4s.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
