@@ -18,7 +18,7 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <ImageView
-        android:id="@+id/NotesNow"
+        android:id="@+id/Player1"
         android:layout_width="160dp"
         android:layout_height="300dp"
         android:layout_marginStart="80dp"
@@ -28,10 +28,10 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/SectorNumber"
         app:layout_constraintVertical_bias="1.0"
-        app:srcCompat="@drawable/n1" />
+        app:srcCompat="@drawable/sc_1" />
 
     <ImageView
-        android:id="@+id/notesNext"
+        android:id="@+id/Player2"
         android:layout_width="160dp"
         android:layout_height="300dp"
         android:layout_marginStart="8dp"
@@ -43,10 +43,10 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.502"
-        app:layout_constraintStart_toEndOf="@+id/NotesNow"
+        app:layout_constraintStart_toEndOf="@+id/Player1"
         app:layout_constraintTop_toBottomOf="@+id/SectorNumber"
         app:layout_constraintVertical_bias="1.0"
-        app:srcCompat="@drawable/n1"
+        app:srcCompat="@drawable/sc_1"
         app:tintMode="add" />
 
     <Button
@@ -58,6 +58,27 @@
         android:text="@string/startScanning"
         android:onClick="buttonClick"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/scoreObj"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:text="@string/scoreObj"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/toggleScanning" />
+
+    <Button
+        android:id="@+id/toggleP2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:onClick="buttonClick"
+        android:text="@string/startP2"
+        app:layout_constraintEnd_toStartOf="@+id/toggleScanning"
         app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
