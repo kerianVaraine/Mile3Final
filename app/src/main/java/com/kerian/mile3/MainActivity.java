@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 
 import android.graphics.drawable.Drawable;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -40,7 +41,12 @@ public class MainActivity extends AppCompatActivity {
     private boolean isScanning = false;
     private ImageView player1;
     private ImageView player2;
+
     private boolean player2isPlaying = false;
+    public void setPlayer2isPlaying (boolean play) { player2isPlaying = play; }
+    public boolean getPlayer2isPlaying(){ return player2isPlaying; }
+    private Player2update p2Update = new Player2update();
+
 
     //timer things for replay
     long startTime;
@@ -48,9 +54,8 @@ public class MainActivity extends AppCompatActivity {
     Timer p2Timer = new Timer();
     private Button toggleP2;
 
-        //arraylist to be populate by array of noteObject class
+    //arraylist to be populate by array of noteObject class
     ArrayList<NoteObject> taskList = new ArrayList();
-
     //
 
     static {
@@ -74,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
         startTime = System.currentTimeMillis();
         toggleP2 = findViewById(R.id.toggleP2);
 
+        //player2 thread to run methods
         //
 
         EstimoteCloudCredentials cloudCredentials =
@@ -152,6 +158,7 @@ public class MainActivity extends AppCompatActivity {
                                 return null;
                             }
                         });
+
     }
 
 
@@ -161,6 +168,7 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         isScanning = false;
 //        if(player2isPlaying) {
+//            Log.d("app", "p2Starting...");
 //            player2Play();
 //        }
     }
@@ -172,6 +180,7 @@ public class MainActivity extends AppCompatActivity {
                     isScanning = true;
                     scanningButton.setText(getResources().getString(R.string.stopScanning));
                     System.out.println("on");
+                    startTime = System.currentTimeMillis();
                 }else {
                     isScanning = false;
                     scanningButton.setText(getResources().getString(R.string.startScanning));
@@ -181,11 +190,11 @@ public class MainActivity extends AppCompatActivity {
             case R.id.toggleP2:
                 if(!player2isPlaying){
                     player2isPlaying = true;
+                    new Player2update().execute();
                     toggleP2.setText(R.string.stopP2);
                 } else {
                     player2isPlaying = false;
                     toggleP2.setText(R.string.startP2);
-
                 }
                 break;
         }
@@ -255,21 +264,39 @@ public class MainActivity extends AppCompatActivity {
         taskList.add(new NoteObject(notes, delay));
     }
 
-
     private void player2Play() {
-
-            if(!taskList.isEmpty()) {
-                player2isPlaying = false;
-                Log.d("app", "triggered P2-");
-                //timer event off task list, event ends with setting player2On to true, so next event can be timered
-                DelayTasks p2NextNote = new DelayTasks();
-                p2NextNote.setDelayTask(taskList.get(0).getSvg());
-                //
-                p2Timer.schedule(p2NextNote, taskList.get(0).getDelay());
-
+        Log.d("app", "p2play trigger");
+        if(!taskList.isEmpty()) {
+            Log.d("app", "tasklist check true");
+//            player2isPlaying = false;
+            //timer event off task list, event ends with setting player2On to true, so next event can be timered
+            DelayTasks p2NextNote = new DelayTasks(taskList.get(0).getSvg());
+            //p2NextNote.setScoreObj(taskList.get(0).getSvg());
+            //
+            p2Timer.schedule(p2NextNote, taskList.get(0).getDelay());
+            taskList.remove(0);
+        } else{
+            Log.d("app", "no scores");
         }
-
     }
+
+    private class Player2update extends AsyncTask<Void,Void,Void> {
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            Log.d("app","thread running");
+            if(getPlayer2isPlaying()) {
+                player2Play();
+                Log.d("app" , " " + this.isCancelled());
+            }
+            return null;
+        }
+        protected Void onPostExcecute() {
+            Log.d("app", "post execute player2Play");
+            return null;
+        }
+    }
+
 
     /////////////
 // delayTask class to run with timer instance for the sector code.
@@ -277,11 +304,15 @@ public class MainActivity extends AppCompatActivity {
     class DelayTasks extends TimerTask {
         int scoreObj;
 
-        public void setDelayTask(int task) {
+        public DelayTasks(int scoreObj) {
+            setScoreObj(scoreObj);
+        }
+
+        public void setScoreObj(int task) {
             this.scoreObj = task;
         }
 
-        public int getDelayTask(){
+        public int getScoreObj(){
             return scoreObj;
         }
 
@@ -289,17 +320,22 @@ public class MainActivity extends AppCompatActivity {
         public void run() {
             //this is where the sector event gets passed to the timer object for player2 imageView, after a delay
             //do stuff!
-            player2.setImageResource(scoreObj);
-            player2isPlaying = true;
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    player2.setImageResource(scoreObj);
+                }
+            });
+//            player2isPlaying = true;
             Log.d("app", "P2 End:");
+            if(!taskList.isEmpty()) {
+                player2Play();
+            }
         }
     }
 
-
     //end of main
 }
-
-
 
 //////
 //note Object, contains svg note int and delay time
@@ -309,8 +345,9 @@ class NoteObject {
     long delay;
 
     public NoteObject (int svg, long delay){
-        setSvg(svg);
-        setDelay(delay);
+        this.svg = svg;
+        this.delay = delay;
+        Log.d("app", svg + " " + delay);
     }
 
     public void setSvg(int svg) {
@@ -328,7 +365,12 @@ class NoteObject {
     public long getDelay() {
         return delay;
     }
+
+    public String toString(){
+        return "svg: " + svg + "; delay" + delay;
+    }
 }
+
 
 
 
