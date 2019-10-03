@@ -23,6 +23,7 @@ import com.estimote.proximity_sdk.api.ProximityZoneBuilder;
 import com.estimote.proximity_sdk.api.ProximityZoneContext;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.Timer;
@@ -58,9 +59,17 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<NoteObject> taskList = new ArrayList();
     //
 
+    //Piece timer
+
+
     static {
         AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
     }
+
+    //@TODO Need to upload taskList to FireBase so can pull on play on multiple devices.
+    //@TODO Send sensor data from phone to FireBase for player 1 to pull notes for multiple devices
+    //@TODO Create a piece timer, set to 5 minutes after clicking a button that says start piece or something. Timer runs and sends finished taskList to FireBase for next performance.
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,9 +88,6 @@ public class MainActivity extends AppCompatActivity {
         startTime = System.currentTimeMillis();
         toggleP2 = findViewById(R.id.toggleP2);
 
-        //player2 thread to run methods
-        //
-
         EstimoteCloudCredentials cloudCredentials =
                 new EstimoteCloudCredentials("mile3interactiveposition-its", "2902b03c7ce2cd2fb8c4b52412587829");
 
@@ -97,26 +103,20 @@ public class MainActivity extends AppCompatActivity {
                 .build();
 
         final ProximityZone zone = new ProximityZoneBuilder().forTag("sector").inNearRange()
-
-
                 .onContextChange(new Function1<Set<? extends ProximityZoneContext>, Unit>() {
-
                         @Override
                     public Unit invoke(Set<? extends ProximityZoneContext> contexts) {
                             if(isScanning) {
-                                List<String> sectors = new ArrayList<>();
+                                List<Integer> sectors = new ArrayList<>();
                                 for (ProximityZoneContext context : contexts) {
-                                    sectors.add(context.getAttachments().get("sector"));
+                                     sectors.add(Integer.parseInt(context.getAttachments().get("sector")));
                                 }
-
+                                //sort list for bool check
+                                Collections.sort(sectors);
                                 Log.d("app", "In range of sectors: " + sectors);
                                 SensorNumber.setText(getResources().getString(R.string.SectorNumber, sectors.toString()));
-
                                 //this be the meat
                                 sectorCombo(sectors);
-                                //
-
-                                //Log.d("app", "delay time: " + delay);
 
 
 //                            //database Stuff
@@ -167,10 +167,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         isScanning = false;
-//        if(player2isPlaying) {
-//            Log.d("app", "p2Starting...");
-//            player2Play();
-//        }
     }
 
     public void buttonClick(View view){
@@ -204,12 +200,11 @@ public class MainActivity extends AppCompatActivity {
     //piece logic
     //
 
-    private void sectorCombo(List<String> sectors) {
+    private void sectorCombo(List<Integer> sectors) {
         String sectorArea;
-        //int notes; //gets resID for svg.
         int notes = 0; //gets resID for svg.
 
-        boolean[] s = {sectors.contains("1"), sectors.contains("2"), sectors.contains("3"), sectors.contains("4")};
+        boolean[] s = {sectors.contains(1), sectors.contains(2), sectors.contains(3), sectors.contains(4)};
 //convert to switch statement, set a local var to string of sector and drawable, extract delay times from here.
         if(s[0] && !s[1] && !s[2] && !s[3]){
             sectorArea = "a";
@@ -244,25 +239,45 @@ public class MainActivity extends AppCompatActivity {
         } else if(s[0] && s[1] && s[2] && !s[3]){
             sectorArea = "l";
             notes = R.drawable.sc_11;
+        } else if(s[0] && !s[1] && s[2] && !s[3]) {
+            sectorArea = "m";
+            notes = 0;
+            //notes = R.drawable.
+        } else if(s[0] && !s[1] && !s[2] && s[3]) {
+            sectorArea = "n";
+            notes = 0;
+        } else if(!s[0] && s[1] && !s[2] && s[3]) {
+            sectorArea = "o";
+            notes = 0;
         } else if(!s[0] && !s[1] && !s[2] && !s[3]) {
             sectorArea = "all off";
+            notes = 0;
         } else if(s[0] && s[1] && s[2] && s[3]){
             sectorArea = "all on";
+            notes = 0;
         } else {
             sectorArea = "undefined";
             notes = 0;
         }
 
-        sectorLetter.setText(sectorArea);
-        player1.setImageResource(notes);
 
         //Player 2 timer playback things
         delay = System.currentTimeMillis() - startTime;
         startTime = System.currentTimeMillis();
 
-        //Need to go through this for player 2; from start of piece to end of piece timer??
-        taskList.add(new NoteObject(notes, delay));
+
+
+        //update player 1 UI and add to tasklist if the event happens for longer than 500 ms. avoids short events when changing between beacons.
+        if(delay > 500) {
+            sectorLetter.setText(sectorArea);
+            player1.setImageResource(notes);
+            taskList.add(new NoteObject(notes, delay));
+        }
     }
+
+
+
+
 
     private void player2Play() {
         Log.d("app", "p2play trigger");
@@ -319,16 +334,15 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void run() {
             //this is where the sector event gets passed to the timer object for player2 imageView, after a delay
-            //do stuff!
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     player2.setImageResource(scoreObj);
                 }
             });
-//            player2isPlaying = true;
             Log.d("app", "P2 End:");
             if(!taskList.isEmpty()) {
+                //recursive call to method until end of taskList is found
                 player2Play();
             }
         }
@@ -339,6 +353,7 @@ public class MainActivity extends AppCompatActivity {
 
 //////
 //note Object, contains svg note int and delay time
+//created to have an array containing both int note object and long delay time for DelayTasks
 //////
 class NoteObject {
     int svg;
