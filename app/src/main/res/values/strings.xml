@@ -1,9 +1,13 @@
 <resources>
-    <string name="app_name">IndoorPositioning</string>
-    <string name="SectorNumber">Sector: %1$s</string>
-    <string name="startScanning">start scanning</string>
-    <string name="stopScanning">stop scanning</string>
-    <string name="scoreObj">$1$s</string>
-    <string name="startP2">Start P2</string>
-    <string name="stopP2">Stop P2</string>
+<string name="app_name">IndoorPositioning</string>
+<string name="SectorNumber">Sector: %1$s</string>
+<string name="startScanning">start scanning</string>
+<string name="stopScanning">stop scanning</string>
+<string name="scoreObj">$1$s</string>
+<string name="startP2">Start P2</string>
+<string name="stopP2">Stop P2</string>
+<string name="beginPiece">Begin Piece</string>
+<string name="pieceInSession">In session</string>
+<string name="countdown">Time Left: $1$f</string>
+    <color name="white">#FFFFFFFF</color>
 </resources>

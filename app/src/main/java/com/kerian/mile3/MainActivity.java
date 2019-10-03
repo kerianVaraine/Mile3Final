@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatDelegate;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -44,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private ImageView player2;
 
     private boolean player2isPlaying = false;
+
     public void setPlayer2isPlaying (boolean play) { player2isPlaying = play; }
     public boolean getPlayer2isPlaying(){ return player2isPlaying; }
     private Player2update p2Update = new Player2update();
@@ -59,7 +61,10 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<NoteObject> taskList = new ArrayList();
     //
 
-    //Piece timer
+    //Piece countdown timer stuff
+    Button pieceCountDown;
+    private boolean pieceUnderway = false;
+    private TextView countDownDisplay;
 
 
     static {
@@ -68,7 +73,8 @@ public class MainActivity extends AppCompatActivity {
 
     //@TODO Need to upload taskList to FireBase so can pull on play on multiple devices.
     //@TODO Send sensor data from phone to FireBase for player 1 to pull notes for multiple devices
-    //@TODO Create a piece timer, set to 5 minutes after clicking a button that says start piece or something. Timer runs and sends finished taskList to FireBase for next performance.
+    //@TODO Create a piece timer, set to 5 minutes after clicking a button that says start piece or something. Timer runs and sends finished taskList to FireBase for next performance. use CountDownTimer class, and display timer on phone for all!
+    //@TODO need is playing bool in Database to trigger all devices to start playing from DB.
 
 
     @Override
@@ -87,6 +93,10 @@ public class MainActivity extends AppCompatActivity {
         //
         startTime = System.currentTimeMillis();
         toggleP2 = findViewById(R.id.toggleP2);
+
+        //piece countdown timer stuff
+        pieceCountDown = findViewById(R.id.pieceCountdown);
+        countDownDisplay = findViewById(R.id.countDownTimer);
 
         EstimoteCloudCredentials cloudCredentials =
                 new EstimoteCloudCredentials("mile3interactiveposition-its", "2902b03c7ce2cd2fb8c4b52412587829");
@@ -111,13 +121,12 @@ public class MainActivity extends AppCompatActivity {
                                 for (ProximityZoneContext context : contexts) {
                                      sectors.add(Integer.parseInt(context.getAttachments().get("sector")));
                                 }
-                                //sort list for bool check
+                                //sort list for bool check in sectorCombo method
                                 Collections.sort(sectors);
                                 Log.d("app", "In range of sectors: " + sectors);
                                 SensorNumber.setText(getResources().getString(R.string.SectorNumber, sectors.toString()));
                                 //this be the meat
                                 sectorCombo(sectors);
-
 
 //                            //database Stuff
                                 //Uncomment to send to database.
@@ -158,7 +167,6 @@ public class MainActivity extends AppCompatActivity {
                                 return null;
                             }
                         });
-
     }
 
 
@@ -172,34 +180,82 @@ public class MainActivity extends AppCompatActivity {
     public void buttonClick(View view){
         switch(view.getId()){
             case R.id.toggleScanning:
-                if(!isScanning){
-                    isScanning = true;
-                    scanningButton.setText(getResources().getString(R.string.stopScanning));
-                    System.out.println("on");
-                    startTime = System.currentTimeMillis();
-                }else {
-                    isScanning = false;
-                    scanningButton.setText(getResources().getString(R.string.startScanning));
-                    System.out.println("off");
-                }
+                toggleScanning();
                 break;
             case R.id.toggleP2:
-                if(!player2isPlaying){
-                    player2isPlaying = true;
-                    new Player2update().execute();
-                    toggleP2.setText(R.string.stopP2);
-                } else {
-                    player2isPlaying = false;
-                    toggleP2.setText(R.string.startP2);
-                }
+                togglePlayer2();
                 break;
+            case R.id.pieceCountdown:
+                toggleScanning();
+
+                //
+                //this'd be where you grab player 2 notes from database and pass it into method to excecute it.
+                //play it during the time that startPiece() is on
+//for now just checking if task list is empty, if not, player 2 goes for it.
+
+                    togglePlayer2();
+
+                //begin the countdown for the piece.
+                startPiece();
+                break;
+        }
+    }
+
+    //button methods
+
+    private void togglePlayer2() {
+        if(!player2isPlaying){
+            player2isPlaying = true;
+            new Player2update().execute();
+            toggleP2.setText(R.string.stopP2);
+        } else {
+            player2isPlaying = false;
+            toggleP2.setText(R.string.startP2);
+        }
+    }
+
+    private void toggleScanning () {
+        if (!isScanning) {
+            isScanning = true;
+            scanningButton.setText(getResources().getString(R.string.stopScanning));
+            System.out.println("on");
+            startTime = System.currentTimeMillis();
+        } else {
+            isScanning = false;
+            scanningButton.setText(getResources().getString(R.string.startScanning));
+            System.out.println("off");
+        }
+    }
+
+    private void startPiece() {
+        if(!pieceUnderway) {
+            pieceUnderway = true;
+            pieceCountDown.setText(R.string.pieceInSession);
+            pieceCountDown.setEnabled(false);
+            startTime = System.currentTimeMillis();
+            //make this its own method, and pass things to it?
+            new CountDownTimer(20000, 1000) {
+                int counter;
+                @Override
+                public void onTick(long l) {
+                    countDownDisplay.setText(String.valueOf(counter));
+                    counter++;
+                }
+                @Override
+                public void onFinish() {
+                    countDownDisplay.setText("Please Leave the room.");
+                    pieceCountDown.setText(R.string.beginPiece);
+                    pieceCountDown.setEnabled(true);
+                    pieceUnderway = false;
+                    toggleScanning();
+                }
+            }.start();
         }
     }
 
     //
     //piece logic
     //
-
     private void sectorCombo(List<Integer> sectors) {
         String sectorArea;
         int notes = 0; //gets resID for svg.
@@ -260,23 +316,17 @@ public class MainActivity extends AppCompatActivity {
             notes = 0;
         }
 
-
         //Player 2 timer playback things
         delay = System.currentTimeMillis() - startTime;
         startTime = System.currentTimeMillis();
 
+        //update Player 1
+        sectorLetter.setText(sectorArea);
+        player1.setImageResource(notes);
+        //
+        taskList.add(new NoteObject(notes, delay));
 
-
-        //update player 1 UI and add to tasklist if the event happens for longer than 500 ms. avoids short events when changing between beacons.
-        if(delay > 500) {
-            sectorLetter.setText(sectorArea);
-            player1.setImageResource(notes);
-            taskList.add(new NoteObject(notes, delay));
-        }
     }
-
-
-
 
 
     private void player2Play() {
@@ -292,6 +342,7 @@ public class MainActivity extends AppCompatActivity {
             taskList.remove(0);
         } else{
             Log.d("app", "no scores");
+            togglePlayer2();
         }
     }
 
@@ -327,7 +378,7 @@ public class MainActivity extends AppCompatActivity {
             this.scoreObj = task;
         }
 
-        public int getScoreObj(){
+        public int getScoreObj() {
             return scoreObj;
         }
 
@@ -341,12 +392,20 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
             Log.d("app", "P2 End:");
-            if(!taskList.isEmpty()) {
+            if (!taskList.isEmpty()) {
                 //recursive call to method until end of taskList is found
                 player2Play();
+            } else {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        togglePlayer2();
+                    }
+                });
             }
         }
     }
+
 
     //end of main
 }
