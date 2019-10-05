@@ -4,6 +4,7 @@ import androidx.annotation.DrawableRes;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 
+import android.content.ClipData;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -22,6 +23,12 @@ import com.estimote.proximity_sdk.api.ProximityObserverBuilder;
 import com.estimote.proximity_sdk.api.ProximityZone;
 import com.estimote.proximity_sdk.api.ProximityZoneBuilder;
 import com.estimote.proximity_sdk.api.ProximityZoneContext;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.GenericTypeIndicator;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -64,8 +71,9 @@ public class MainActivity extends AppCompatActivity {
     //Piece countdown timer stuff
     Button pieceCountDown;
     private boolean pieceUnderway = false;
-    private TextView countDownDisplay;
+    private TextView countDownDisplay, p2CountdownDisplay;
 
+    P2CountDown p2countdown = new P2CountDown();
 
     static {
         AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
@@ -97,6 +105,29 @@ public class MainActivity extends AppCompatActivity {
         //piece countdown timer stuff
         pieceCountDown = findViewById(R.id.pieceCountdown);
         countDownDisplay = findViewById(R.id.countDownTimer);
+
+                p2CountdownDisplay = findViewById(R.id.P2countDownTimer);
+
+                //DB things
+        final FirebaseDatabase database = FirebaseDatabase.getInstance();
+        final DatabaseReference P1Ref = database.getReference("P1");
+
+        //database on change listener
+        P1Ref.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                GenericTypeIndicator<ArrayList<Integer>> t = new GenericTypeIndicator<ArrayList<Integer>>() {};
+                ArrayList<Integer> stringArray = snapshot.getValue(t);
+                Log.d("app", "Value is: " + stringArray);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+                // Failed to read value
+                Log.d("app", "Failed to read value.", error.toException());
+            }
+        });
+
 
         EstimoteCloudCredentials cloudCredentials =
                 new EstimoteCloudCredentials("mile3interactiveposition-its", "2902b03c7ce2cd2fb8c4b52412587829");
@@ -131,9 +162,8 @@ public class MainActivity extends AppCompatActivity {
 //                            //database Stuff
                                 //Uncomment to send to database.
 
-//                            FirebaseDatabase database = FirebaseDatabase.getInstance();
-//                            DatabaseReference myRef = database.getReference("P1");
-//                            myRef.setValue(sectors);
+
+                            P1Ref.setValue(sectors);
                             }
                                 return null;
                     }
@@ -167,6 +197,7 @@ public class MainActivity extends AppCompatActivity {
                                 return null;
                             }
                         });
+
     }
 
 
@@ -203,14 +234,20 @@ public class MainActivity extends AppCompatActivity {
 
     //button methods
 
+
     private void togglePlayer2() {
         if(!player2isPlaying){
+            if(!taskList.isEmpty()){
+                p2countdown.start();
+            }
             player2isPlaying = true;
             new Player2update().execute();
             toggleP2.setText(R.string.stopP2);
         } else {
             player2isPlaying = false;
             toggleP2.setText(R.string.startP2);
+            pieceCountDown.setEnabled(true);
+            p2countdown.cancel();
         }
     }
 
@@ -245,9 +282,11 @@ public class MainActivity extends AppCompatActivity {
                 public void onFinish() {
                     countDownDisplay.setText("Please Leave the room.");
                     pieceCountDown.setText(R.string.beginPiece);
-                    pieceCountDown.setEnabled(true);
                     pieceUnderway = false;
                     toggleScanning();
+                    if(taskList.isEmpty()){
+                        pieceCountDown.setEnabled(true);
+                    }
                 }
             }.start();
         }
@@ -355,6 +394,9 @@ public class MainActivity extends AppCompatActivity {
                 player2Play();
                 Log.d("app" , " " + this.isCancelled());
             }
+            if(taskList.isEmpty()){
+                p2countdown.onFinish();
+            }
             return null;
         }
         protected Void onPostExcecute() {
@@ -403,6 +445,35 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
             }
+        }
+    }
+
+    private class P2CountDown extends CountDownTimer{
+        int counter;
+
+        public P2CountDown(long millisInFuture, long countDownInterval) {
+            super(millisInFuture, countDownInterval);
+        }
+
+
+
+        public P2CountDown() {
+            super(60000,1000);
+            counter =0;
+        }
+
+        @Override
+        public void onTick(long l) {
+            if (taskList.isEmpty()) {
+                this.onFinish();
+            }
+            p2CountdownDisplay.setText(String.valueOf(counter));
+            counter++;
+        }
+
+        @Override
+        public void onFinish() {
+            p2CountdownDisplay.setText("End");
         }
     }
 
