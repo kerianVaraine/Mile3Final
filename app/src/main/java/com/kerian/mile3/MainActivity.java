@@ -67,6 +67,10 @@ public class MainActivity extends AppCompatActivity {
     //arraylist to be populate by array of noteObject class
     ArrayList<NoteObject> taskList = new ArrayList();
     //
+    //database stuff
+    final FirebaseDatabase database = FirebaseDatabase.getInstance();
+    final DatabaseReference P1Ref = database.getReference("P1");
+    final DatabaseReference P2Ref = database.getReference("P2");
 
     //Piece countdown timer stuff
     Button pieceCountDown;
@@ -109,8 +113,7 @@ public class MainActivity extends AppCompatActivity {
                 p2CountdownDisplay = findViewById(R.id.P2countDownTimer);
 
                 //DB things
-        final FirebaseDatabase database = FirebaseDatabase.getInstance();
-        final DatabaseReference P1Ref = database.getReference("P1");
+
 
         //database on change listener
         P1Ref.addValueEventListener(new ValueEventListener() {
@@ -283,6 +286,7 @@ public class MainActivity extends AppCompatActivity {
                     countDownDisplay.setText("Please Leave the room.");
                     pieceCountDown.setText(R.string.beginPiece);
                     pieceUnderway = false;
+                    P2Ref.setValue(taskList);
                     toggleScanning();
                     if(taskList.isEmpty()){
                         pieceCountDown.setEnabled(true);
@@ -391,16 +395,19 @@ public class MainActivity extends AppCompatActivity {
         protected Void doInBackground(Void... voids) {
             Log.d("app","thread running");
             if(getPlayer2isPlaying()) {
-                player2Play();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        player2Play();
+                    }
+                });
+
+
                 Log.d("app" , " " + this.isCancelled());
             }
             if(taskList.isEmpty()){
                 p2countdown.onFinish();
             }
-            return null;
-        }
-        protected Void onPostExcecute() {
-            Log.d("app", "post execute player2Play");
             return null;
         }
     }
