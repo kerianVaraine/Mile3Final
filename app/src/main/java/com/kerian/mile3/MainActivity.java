@@ -1,11 +1,9 @@
 package com.kerian.mile3;
 
-import androidx.annotation.DrawableRes;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 
-import android.content.ClipData;
-import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -45,46 +43,43 @@ public class MainActivity extends AppCompatActivity {
 
     private ProximityObserver proximityObserver;
 
-    private TextView SensorNumber, sectorLetter;
-    private Button scanningButton;
     private boolean isScanning = false;
+    private boolean isAudience = true; //only audience phone can scan for BLEBeacons.
     private ImageView player1;
     private ImageView player2;
 
     private boolean player2isPlaying = false;
+    private long pieceLength = 20000;//length of piece in ms.
 
-    public void setPlayer2isPlaying (boolean play) { player2isPlaying = play; }
     public boolean getPlayer2isPlaying(){ return player2isPlaying; }
-    private Player2update p2Update = new Player2update();
-
 
     //timer things for replay
     long startTime;
     long delay;
     Timer p2Timer = new Timer();
-    private Button toggleP2;
 
     //arraylist to be populate by array of noteObject class
     ArrayList<NoteObject> taskList = new ArrayList();
-    //
+
     //database stuff
     final FirebaseDatabase database = FirebaseDatabase.getInstance();
     final DatabaseReference P1Ref = database.getReference("P1");
     final DatabaseReference P2Ref = database.getReference("P2");
+    final DatabaseReference PerformerMode = database.getReference("isPerforming");
+
+    ArrayList<NoteObject> tasklistDB = new ArrayList();
+    ArrayList<Integer> sectorArray = new ArrayList();
 
     //Piece countdown timer stuff
     Button pieceCountDown;
     private boolean pieceUnderway = false;
-    private TextView countDownDisplay, p2CountdownDisplay;
-
-    P2CountDown p2countdown = new P2CountDown();
+    private TextView countDownDisplay;
 
     static {
         AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
     }
 
-    //@TODO Need to upload taskList to FireBase so can pull on play on multiple devices.
-    //@TODO Send sensor data from phone to FireBase for player 1 to pull notes for multiple devices
+
     //@TODO Create a piece timer, set to 5 minutes after clicking a button that says start piece or something. Timer runs and sends finished taskList to FireBase for next performance. use CountDownTimer class, and display timer on phone for all!
     //@TODO need is playing bool in Database to trigger all devices to start playing from DB.
 
@@ -93,43 +88,17 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        //layout stuff
-        SensorNumber = findViewById(R.id.SectorNumber);
-        sectorLetter = findViewById(R.id.scoreObj);
-        scanningButton = findViewById(R.id.toggleScanning);
 
         //image things
         player1 = findViewById(R.id.Player1);
         player2 = findViewById(R.id.Player2);
-
         //
         startTime = System.currentTimeMillis();
-        toggleP2 = findViewById(R.id.toggleP2);
-
         //piece countdown timer stuff
         pieceCountDown = findViewById(R.id.pieceCountdown);
         countDownDisplay = findViewById(R.id.countDownTimer);
 
-                p2CountdownDisplay = findViewById(R.id.P2countDownTimer);
 
-                //DB things
-
-
-        //database on change listener
-        P1Ref.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot snapshot) {
-                GenericTypeIndicator<ArrayList<Integer>> t = new GenericTypeIndicator<ArrayList<Integer>>() {};
-                ArrayList<Integer> stringArray = snapshot.getValue(t);
-                Log.d("app", "Value is: " + stringArray);
-            }
-
-            @Override
-            public void onCancelled(DatabaseError error) {
-                // Failed to read value
-                Log.d("app", "Failed to read value.", error.toException());
-            }
-        });
 
 
         EstimoteCloudCredentials cloudCredentials =
@@ -158,14 +127,10 @@ public class MainActivity extends AppCompatActivity {
                                 //sort list for bool check in sectorCombo method
                                 Collections.sort(sectors);
                                 Log.d("app", "In range of sectors: " + sectors);
-                                SensorNumber.setText(getResources().getString(R.string.SectorNumber, sectors.toString()));
-                                //this be the meat
-                                sectorCombo(sectors);
+                                //this be the meat, original non-asynchronous method call.
+//                                sectorCombo(sectors);
 
-//                            //database Stuff
-                                //Uncomment to send to database.
-
-
+                                //set Database sector values
                             P1Ref.setValue(sectors);
                             }
                                 return null;
@@ -201,6 +166,25 @@ public class MainActivity extends AppCompatActivity {
                             }
                         });
 
+        //DB things
+        //database on change listener
+        P1Ref.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                GenericTypeIndicator<ArrayList<Integer>> t = new GenericTypeIndicator<ArrayList<Integer>>() {};
+                sectorArray = snapshot.getValue(t);
+                if(!sectorArray.isEmpty()) {
+                    sectorCombo(sectorArray);
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+                // Failed to read value
+                Log.d("app", "Failed to read value.", error.toException());
+            }
+        });
+
     }
 
 
@@ -213,57 +197,38 @@ public class MainActivity extends AppCompatActivity {
 
     public void buttonClick(View view){
         switch(view.getId()){
-            case R.id.toggleScanning:
-                toggleScanning();
-                break;
-            case R.id.toggleP2:
-                togglePlayer2();
-                break;
             case R.id.pieceCountdown:
                 toggleScanning();
-
-                //
-                //this'd be where you grab player 2 notes from database and pass it into method to excecute it.
-                //play it during the time that startPiece() is on
-//for now just checking if task list is empty, if not, player 2 goes for it.
-
-                    togglePlayer2();
-
-                //begin the countdown for the piece.
+//                togglePlayer2();
                 startPiece();
                 break;
         }
     }
 
+
     //button methods
-
-
     private void togglePlayer2() {
         if(!player2isPlaying){
-            if(!taskList.isEmpty()){
-                p2countdown.start();
-            }
             player2isPlaying = true;
             new Player2update().execute();
-            toggleP2.setText(R.string.stopP2);
         } else {
             player2isPlaying = false;
-            toggleP2.setText(R.string.startP2);
-            pieceCountDown.setEnabled(true);
-            p2countdown.cancel();
+//            pieceCountDown.setEnabled(true);
         }
     }
 
     private void toggleScanning () {
-        if (!isScanning) {
-            isScanning = true;
-            scanningButton.setText(getResources().getString(R.string.stopScanning));
-            System.out.println("on");
-            startTime = System.currentTimeMillis();
-        } else {
-            isScanning = false;
-            scanningButton.setText(getResources().getString(R.string.startScanning));
-            System.out.println("off");
+        if(isAudience) {
+            if (!isScanning) {
+                isScanning = true;
+                System.out.println("on");
+                startTime = System.currentTimeMillis();
+            } else {
+                isScanning = false;
+                System.out.println("off");
+            }
+        }else if(!isAudience){
+            Log.d("app", "isPerformer");
         }
     }
 
@@ -273,13 +238,23 @@ public class MainActivity extends AppCompatActivity {
             pieceCountDown.setText(R.string.pieceInSession);
             pieceCountDown.setEnabled(false);
             startTime = System.currentTimeMillis();
+            //taskList Db
+            tasklistDB = getTasklistFromDB(new FireBaseNoteObjectArrayListCallback() {
+                                               @Override
+                                               public void onCallBack(ArrayList<NoteObject> n) {
+                                                   Log.d("app", "callback thingo...");
+                                                   Log.d("app", "taskListDB :: " + tasklistDB.toString());
+                                                   togglePlayer2();
+                                                   removeTasklistFromDB();
+                                               }});
+
             //make this its own method, and pass things to it?
-            new CountDownTimer(20000, 1000) {
-                int counter;
+            new CountDownTimer(pieceLength, 1000) {
+                int counter = (int) pieceLength/1000; //length in seconds to count down.
                 @Override
                 public void onTick(long l) {
                     countDownDisplay.setText(String.valueOf(counter));
-                    counter++;
+                    counter--;
                 }
                 @Override
                 public void onFinish() {
@@ -288,9 +263,9 @@ public class MainActivity extends AppCompatActivity {
                     pieceUnderway = false;
                     P2Ref.setValue(taskList);
                     toggleScanning();
-                    if(taskList.isEmpty()){
+
                         pieceCountDown.setEnabled(true);
-                    }
+
                 }
             }.start();
         }
@@ -364,30 +339,34 @@ public class MainActivity extends AppCompatActivity {
         startTime = System.currentTimeMillis();
 
         //update Player 1
-        sectorLetter.setText(sectorArea);
         player1.setImageResource(notes);
-        //
+        //add noteObjects to tasklist for playback
         taskList.add(new NoteObject(notes, delay));
-
     }
 
-
+//method run recursively in Player2update class.
     private void player2Play() {
-        Log.d("app", "p2play trigger");
-        if(!taskList.isEmpty()) {
-            Log.d("app", "tasklist check true");
-//            player2isPlaying = false;
-            //timer event off task list, event ends with setting player2On to true, so next event can be timered
-            DelayTasks p2NextNote = new DelayTasks(taskList.get(0).getSvg());
-            //p2NextNote.setScoreObj(taskList.get(0).getSvg());
-            //
-            p2Timer.schedule(p2NextNote, taskList.get(0).getDelay());
-            taskList.remove(0);
-        } else{
-            Log.d("app", "no scores");
-            togglePlayer2();
-        }
-    }
+                if(!tasklistDB.isEmpty()) {
+
+                    //Local Tasklist
+                    //get svg ref and delay from tasklist, and schedule next Player 2 note, then remove task from list.
+//            DelayTasks p2NextNote = new DelayTasks(taskList.get(0).getSvg());
+//            p2Timer.schedule(p2NextNote, taskList.get(0).getDelay());
+//            taskList.remove(0);
+
+                    //DatabaseTaskList
+                    DelayTasks p2NextNote = new DelayTasks(tasklistDB.get(0).getSvg());
+                    p2Timer.schedule(p2NextNote, tasklistDB.get(0).getDelay());
+                    tasklistDB.remove(0);
+                }
+                else{
+                    Log.d("app", "Tasklist contains no NoteObjects.");
+                    togglePlayer2();
+                }
+
+            }
+
+
 
     private class Player2update extends AsyncTask<Void,Void,Void> {
 
@@ -405,11 +384,39 @@ public class MainActivity extends AppCompatActivity {
 
                 Log.d("app" , " " + this.isCancelled());
             }
-            if(taskList.isEmpty()){
-                p2countdown.onFinish();
-            }
             return null;
         }
+    }
+
+
+
+    //Fetch tasklist from database and create a copy of the info as new NoteObjects.
+    private ArrayList<NoteObject> getTasklistFromDB(final FireBaseNoteObjectArrayListCallback fireBaseNoteObjectArrayListCallback) {
+        final ArrayList<NoteObject> tmpTaskList = new ArrayList();
+
+        P2Ref.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                for(DataSnapshot snapshot: dataSnapshot.getChildren()){
+                    long svg = (long) snapshot.child("svg").getValue();
+                    long d = (long) snapshot.child("delay").getValue();
+                    NoteObject n = new NoteObject((int) svg, d);
+                    tmpTaskList.add(n);
+                }
+                fireBaseNoteObjectArrayListCallback.onCallBack(tmpTaskList);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+
+        return tmpTaskList;
+    }
+
+    private void removeTasklistFromDB() {
+        P2Ref.removeValue();
     }
 
 
@@ -443,6 +450,7 @@ public class MainActivity extends AppCompatActivity {
             Log.d("app", "P2 End:");
             if (!taskList.isEmpty()) {
                 //recursive call to method until end of taskList is found
+                Log.d("app", "calling next NoteObject");
                 player2Play();
             } else {
                 runOnUiThread(new Runnable() {
@@ -455,37 +463,17 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private class P2CountDown extends CountDownTimer{
-        int counter;
-
-        public P2CountDown(long millisInFuture, long countDownInterval) {
-            super(millisInFuture, countDownInterval);
-        }
-
-
-
-        public P2CountDown() {
-            super(60000,1000);
-            counter =0;
-        }
-
-        @Override
-        public void onTick(long l) {
-            if (taskList.isEmpty()) {
-                this.onFinish();
-            }
-            p2CountdownDisplay.setText(String.valueOf(counter));
-            counter++;
-        }
-
-        @Override
-        public void onFinish() {
-            p2CountdownDisplay.setText("End");
-        }
-    }
-
 
     //end of main
+}
+
+//Callback for asynchronous DB call:
+ interface FireBaseNoteObjectArrayListCallback {
+    void onCallBack(ArrayList<NoteObject> n);
+}
+
+interface FireBaseSectorArrayListCallback {
+    void onCallBack(ArrayList<Integer> i);
 }
 
 //////
@@ -499,7 +487,8 @@ class NoteObject {
     public NoteObject (int svg, long delay){
         this.svg = svg;
         this.delay = delay;
-        Log.d("app", svg + " " + delay);
+    }
+    public NoteObject() {
     }
 
     public void setSvg(int svg) {
@@ -519,7 +508,7 @@ class NoteObject {
     }
 
     public String toString(){
-        return "svg: " + svg + "; delay" + delay;
+        return "svg: " + svg + ", delay: " + delay;
     }
 }
 

@@ -7,48 +7,22 @@
     android:background="@color/white"
     tools:context=".MainActivity">
 
-    <TextView
-        android:id="@+id/SectorNumber"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        android:text="@string/SectorNumber"
-        android:textSize="30sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <Button
-        android:id="@+id/toggleP2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:layout_marginEnd="16dp"
-        android:onClick="buttonClick"
-        android:text="@string/startP2"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/toggleScanning" />
-
     <ImageView
         android:id="@+id/Player1"
         android:layout_width="160dp"
         android:layout_height="300dp"
         android:layout_marginStart="80dp"
-        android:layout_marginTop="8dp"
         android:layout_marginBottom="8dp"
+        android:contentDescription="TODO"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/SectorNumber"
-        app:layout_constraintVertical_bias="1.0"
-        app:srcCompat="@drawable/sc_1"
-        android:contentDescription="TODO" />
+        app:srcCompat="@drawable/sc_1" />
 
     <ImageView
         android:id="@+id/Player2"
         android:layout_width="160dp"
         android:layout_height="300dp"
         android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
         android:layout_marginEnd="32dp"
         android:layout_marginBottom="8dp"
         android:forceDarkAllowed="false"
@@ -57,67 +31,31 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.502"
         app:layout_constraintStart_toEndOf="@+id/Player1"
-        app:layout_constraintTop_toBottomOf="@+id/SectorNumber"
-        app:layout_constraintVertical_bias="1.0"
         app:srcCompat="@drawable/sc_1"
         app:tintMode="add" />
-
-    <Button
-        android:id="@+id/toggleScanning"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
-        android:onClick="buttonClick"
-        android:text="@string/startScanning"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
-        android:id="@+id/scoreObj"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="8dp"
-        android:text="@string/scoreObj"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/SectorNumber" />
 
     <Button
         android:id="@+id/pieceCountdown"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
         android:onClick="buttonClick"
         android:text="@string/beginPiece"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/toggleP2" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/countDownTimer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="50dp"
+        android:layout_marginStart="231dp"
         android:layout_marginTop="16dp"
-        android:layout_marginEnd="50dp"
+        android:layout_marginEnd="216dp"
         android:text="@string/countdown"
         android:textSize="24sp"
-        app:layout_constraintEnd_toStartOf="@+id/toggleScanning"
-        app:layout_constraintStart_toEndOf="@+id/SectorNumber"
+        app:layout_constraintEnd_toStartOf="@+id/pieceCountdown"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
-        android:id="@+id/P2countDownTimer"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="63dp"
-        android:layout_marginEnd="5dp"
-        android:layout_marginBottom="26dp"
-        android:text="@string/countdown"
-        android:textSize="24sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/pieceCountdown" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
