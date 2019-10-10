@@ -8,6 +8,8 @@
 <string name="stopP2">Stop P2</string>
 <string name="beginPiece">Begin Piece</string>
 <string name="pieceInSession">In session</string>
-<string name="countdown">Time Left: $1$f</string>
+<string name="countdown">Press begin to start</string>
+    <string name="isAudience">Audience</string>
+    <string name="isPerformer">Performer</string>
     <color name="white">#FFFFFFFF</color>
 </resources>

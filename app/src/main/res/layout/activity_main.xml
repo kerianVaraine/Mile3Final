@@ -26,7 +26,6 @@
         android:layout_marginEnd="32dp"
         android:layout_marginBottom="8dp"
         android:forceDarkAllowed="false"
-        android:tint="#00D11313"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.502"
@@ -55,6 +54,17 @@
         android:text="@string/countdown"
         android:textSize="24sp"
         app:layout_constraintEnd_toStartOf="@+id/pieceCountdown"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Switch
+        android:id="@+id/isAudience"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:checked="true"
+        android:text="@string/isAudience"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 

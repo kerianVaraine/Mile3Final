@@ -10,7 +10,9 @@ import android.os.CountDownTimer;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
+import android.widget.Switch;
 import android.widget.TextView;
 
 import com.estimote.mustard.rx_goodness.rx_requirements_wizard.Requirement;
@@ -45,11 +47,12 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean isScanning = false;
     private boolean isAudience = true; //only audience phone can scan for BLEBeacons.
+    private Switch audienceSwitch;
     private ImageView player1;
     private ImageView player2;
 
     private boolean player2isPlaying = false;
-    private long pieceLength = 20000;//length of piece in ms.
+    private long pieceLength = 60000;//length of piece in ms.
 
     public boolean getPlayer2isPlaying(){ return player2isPlaying; }
 
@@ -65,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
     final FirebaseDatabase database = FirebaseDatabase.getInstance();
     final DatabaseReference P1Ref = database.getReference("P1");
     final DatabaseReference P2Ref = database.getReference("P2");
-    final DatabaseReference PerformerMode = database.getReference("isPerforming");
+    final DatabaseReference isPerforming = database.getReference("isPerforming");
 
     ArrayList<NoteObject> tasklistDB = new ArrayList();
     ArrayList<Integer> sectorArray = new ArrayList();
@@ -89,6 +92,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        //switch
+        audienceSwitch = findViewById(R.id.isAudience);
         //image things
         player1 = findViewById(R.id.Player1);
         player2 = findViewById(R.id.Player2);
@@ -98,8 +103,18 @@ public class MainActivity extends AppCompatActivity {
         pieceCountDown = findViewById(R.id.pieceCountdown);
         countDownDisplay = findViewById(R.id.countDownTimer);
 
-
-
+        //init isPerforming
+        isPerforming.setValue(0);
+        //init sectorDB
+        sectorArray.add(1);
+        P1Ref.setValue(sectorArray);
+//Switch Listener
+audienceSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+    @Override
+    public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+        isAudience = b;
+    }
+});
 
         EstimoteCloudCredentials cloudCredentials =
                 new EstimoteCloudCredentials("mile3interactiveposition-its", "2902b03c7ce2cd2fb8c4b52412587829");
@@ -127,11 +142,15 @@ public class MainActivity extends AppCompatActivity {
                                 //sort list for bool check in sectorCombo method
                                 Collections.sort(sectors);
                                 Log.d("app", "In range of sectors: " + sectors);
+
                                 //this be the meat, original non-asynchronous method call.
 //                                sectorCombo(sectors);
 
                                 //set Database sector values
-                            P1Ref.setValue(sectors);
+                                if(isAudience) {
+                                    if(sectors.isEmpty()){sectors.add(1);}
+                                    P1Ref.setValue(sectors);
+                                }
                             }
                                 return null;
                     }
@@ -173,15 +192,29 @@ public class MainActivity extends AppCompatActivity {
             public void onDataChange(DataSnapshot snapshot) {
                 GenericTypeIndicator<ArrayList<Integer>> t = new GenericTypeIndicator<ArrayList<Integer>>() {};
                 sectorArray = snapshot.getValue(t);
-                if(!sectorArray.isEmpty()) {
+                if(sectorArray.isEmpty()){sectorArray.add(1);}
                     sectorCombo(sectorArray);
-                }
+
             }
 
             @Override
             public void onCancelled(DatabaseError error) {
                 // Failed to read value
                 Log.d("app", "Failed to read value.", error.toException());
+            }
+        });
+
+        isPerforming.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                if((Long) dataSnapshot.getValue() == 1L){
+                    startPiece();
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
             }
         });
 
@@ -198,8 +231,8 @@ public class MainActivity extends AppCompatActivity {
     public void buttonClick(View view){
         switch(view.getId()){
             case R.id.pieceCountdown:
+                isPerforming.setValue(1);
                 toggleScanning();
-//                togglePlayer2();
                 startPiece();
                 break;
         }
@@ -234,10 +267,14 @@ public class MainActivity extends AppCompatActivity {
 
     private void startPiece() {
         if(!pieceUnderway) {
+            audienceSwitch.setEnabled(false);
             pieceUnderway = true;
             pieceCountDown.setText(R.string.pieceInSession);
             pieceCountDown.setEnabled(false);
             startTime = System.currentTimeMillis();
+
+            //setDB isPerforming
+            isPerforming.setValue(1);
             //taskList Db
             tasklistDB = getTasklistFromDB(new FireBaseNoteObjectArrayListCallback() {
                                                @Override
@@ -265,7 +302,8 @@ public class MainActivity extends AppCompatActivity {
                     toggleScanning();
 
                         pieceCountDown.setEnabled(true);
-
+                    audienceSwitch.setEnabled(true);
+                    isPerforming.setValue(0);
                 }
             }.start();
         }
